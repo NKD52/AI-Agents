@@ -1,0 +1,397 @@
+{
+  "name": "Voice Summarizer",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -320,
+        224
+      ],
+      "id": "5090aadc-4959-4291-9190-b2c0c86c424c",
+      "name": "Webhook",
+      "webhookId": "c5319b34-5cc8-4501-87c2-3ee51a5f6150"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        64,
+        224
+      ],
+      "id": "395e5d5b-9152-437d-ae3b-0ca06b7ef2f1",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -304,
+        560
+      ],
+      "id": "83143726-55b7-4a3e-b2f9-23e1af7779a4",
+      "name": "Webhook1",
+      "webhookId": "c5319b34-5cc8-4501-87c2-3ee51a5f6150"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "667794849760863",
+        "recipientPhoneNumber": "={{ $json.body.entry[0].changes[0].value.contacts[0].wa_id }}",
+        "textBody": "I'm designed specifically to summarize voice note transcriptions into readable notes.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        144,
+        448
+      ],
+      "id": "9a1e78f6-f93f-475a-9fe4-ab166642b94d",
+      "name": "Send message",
+      "webhookId": "590b5d6f-b59a-415c-9bd3-cf17f591c471",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "bt00AxmP0YlY5p52",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.entry[0].changes[0].value.messages[0].type }}",
+                    "rightValue": "text",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "356a515f-7532-40cb-aeb0-8e44c43a3374"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9d1804c2-2db4-4a96-aa65-80b9275d336c",
+                    "leftValue": "={{ $json.body.entry[0].changes[0].value.messages[0].type }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -80,
+        560
+      ],
+      "id": "d9126593-9c02-4fef-a8b1-dc8d66ed4c94",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $json.body.entry[0].changes[0].value.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        144,
+        656
+      ],
+      "id": "c0d253f2-8948-456f-80a6-8337cb0e6237",
+      "name": "Download media",
+      "webhookId": "064c65a8-0a7c-4914-86a2-6dea4482aa07",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "bt00AxmP0YlY5p52",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        368,
+        656
+      ],
+      "id": "c08b1a32-43d7-4e73-a591-456392246201",
+      "name": "Download",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "bt00AxmP0YlY5p52",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": " http://127.0.0.1:5000\\transcribe",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        592,
+        656
+      ],
+      "id": "bb017d28-79f7-4faf-879c-55dbfacbc6c7",
+      "name": "Transcribe"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=## AI ASSISTANT PERSONA AND GOAL ##\nYou are a \"Voice Note Analyst,\" an AI assistant specializing in synthesizing transcribed audio messages. Your primary function is to transform a raw, often unstructured, voice note transcription into a structured, objective, and easily scannable summary. The user relies on your output to understand the message's content without ever having to listen to the audio.\n\n## OUTPUT REQUIREMENTS ##\nProduce a summary in clean English using the following strict format.\n\n### 1. Main Summary:\nA brief, one-paragraph overview written in the third person (e.g., \"The sender called to update the recipient on a project timeline and assign two action items.\").\n\n### 2. Key Points:\nA bulleted list detailing the most important information, facts, and decisions from the message. This section must be objective and concise.\n\n### 3. Action Items / Questions:\nA bulleted list of direct questions asked by the sender or tasks they want the recipient to perform. If there are none, state \"None.\"\n\n## PROCESSING RULES ##\n- **Language:** Translate all content, including Hindi or Hinglish, into natural and professional English.\n- **Cleaning:** Remove all filler words, false starts, repetitions, and vocal tics (e.g., 'uh', 'um', 'like', 'you know').\n- **Integrity:** Do not add any new information or interpret the sender's intent beyond what is explicitly stated. The meaning must remain 100% faithful to the original transcription.\n- **Artifacts:** Ignore and remove any transcription annotations, timestamps, or confidence scores.\n\n## EXAMPLE ##\n**Input Transcription:** \"arey yaar, so, like, I was thinking... woh jo meeting thi na kal 4 baje, woh cancel ho gayi hai. It's now happening on Friday at 11 AM. Please make sure ke woh presentation ready ho. Aur haan, can you call Ali to confirm he got the memo? Thanks.\"\n**Your Expected Output:**\n\n**Main Summary:**\nThe sender has rescheduled a meeting and is asking the recipient to prepare a presentation and contact a colleague to pass on the new information.\n\n**Key Points:**\n* The meeting previously scheduled for tomorrow at 4:00 PM has been canceled.\n* The meeting has been rescheduled to Friday at 11:00 AM.\n* The presentation for the meeting needs to be ready.\n\n**Action Items / Questions:**\n* Prepare the presentation for the meeting.\n* Call Ali to confirm he is aware of the new meeting time.\n\n---\n## START OF TASK ##\n\n**Transcribed Text:**\n{{ $json.transcription }}\n\nALWAYS RUN THE TOOL remove_annotations before sending a message\n\n\n\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        816,
+        656
+      ],
+      "id": "b94b4ae9-7b54-4b8c-933d-148b44908c00",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "function removeAnnotations(input) {\n  return input.replace(/【[^】]*】/g, '').trim();\n}\n\n// Example usage\nconst output = removeAnnotations(query);\nreturn output;"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        896
+      ],
+      "id": "73532036-06d2-466a-881d-a08eb02613d5",
+      "name": "remove_annotations"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        800,
+        880
+      ],
+      "id": "17b2e6fe-8392-4075-a477-ebba8022760f",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2Cjs7Bp6pqwjJ8nX",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "667794849760863",
+        "recipientPhoneNumber": "={{ $('Webhook1').item.json.body.entry[0].changes[0].value.contacts[0].wa_id }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        656
+      ],
+      "id": "94a135bc-1a59-43bb-a949-cd414e350e3c",
+      "name": "Send message1",
+      "webhookId": "590b5d6f-b59a-415c-9bd3-cf17f591c471",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "bt00AxmP0YlY5p52",
+          "name": "WhatsApp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message": {
+      "main": [
+        []
+      ]
+    },
+    "Download media": {
+      "main": [
+        [
+          {
+            "node": "Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download": {
+      "main": [
+        [
+          {
+            "node": "Transcribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remove_annotations": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9db3a73d-2994-45d9-9b60-90097f42e5db",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f02f995494cd88f8bbc6c82da93c310de3f2c6cb72f938b4c7cac2af58f0d81"
+  },
+  "id": "3cixQ32uBhgquIsr",
+  "tags": []
+}
