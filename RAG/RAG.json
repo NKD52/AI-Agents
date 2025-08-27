@@ -1,0 +1,379 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "10nTU9e5j1OxFIRHmveQ7ODlZgCqzrdcv",
+          "mode": "list",
+          "cachedResultName": "FAQ",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/10nTU9e5j1OxFIRHmveQ7ODlZgCqzrdcv"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        816
+      ],
+      "id": "bd35791e-42d8-4fc7-ac35-3a8e0264a0a9",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YoXHcdK7BNE3ccwX",
+          "name": "Google Drive account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        224,
+        816
+      ],
+      "id": "bf8a2bf7-0d12-4be3-945d-e8594f27a57b",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YoXHcdK7BNE3ccwX",
+          "name": "Google Drive account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8nollama",
+          "mode": "list",
+          "cachedResultName": "n8nollama"
+        },
+        "options": {
+          "pineconeNamespace": "FAQ"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        816
+      ],
+      "id": "88783284-2eac-4ead-b892-6978a47f9def",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "swJObTZxRLhjABcA",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "all-minilm:22m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        432,
+        992
+      ],
+      "id": "47ba0020-4eff-4410-b994-02f2a6d79080",
+      "name": "Embeddings Ollama",
+      "credentials": {
+        "ollamaApi": {
+          "id": "YbbfugIxUZIiBxzC",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        592,
+        960
+      ],
+      "id": "ed9c7dd6-2750-4c1d-a1a3-9aaab2531851",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        704,
+        1104
+      ],
+      "id": "8a989127-e9ad-4e51-a578-3dce5dc368df",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "content": "how to insert pdf/files into a model",
+        "height": 512,
+        "width": 1040
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -112,
+        752
+      ],
+      "typeVersion": 1,
+      "id": "fa1c117b-6be1-4f69-b885-b6d68c36ee29",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        768
+      ],
+      "id": "96631d5d-2805-49c4-8e6c-ec84e4cb9381",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        976
+      ],
+      "id": "07d64317-c232-4013-a1e5-38d3c61a77d7",
+      "name": "When chat message received",
+      "webhookId": "71c723b0-8685-4696-834d-9fc2a437ed49"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        992
+      ],
+      "id": "77b9d3d9-fac7-49ce-a344-2bbf683c5737",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2Cjs7Bp6pqwjJ8nX",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Call this tool to access the FAQ and Policy data",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8nollama",
+          "mode": "list",
+          "cachedResultName": "n8nollama"
+        },
+        "options": {
+          "pineconeNamespace": "FAQ"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        1344,
+        992
+      ],
+      "id": "51b64ac9-e73f-4c3d-b421-57bc9d735558",
+      "name": "KnowledgeBase",
+      "credentials": {
+        "pineconeApi": {
+          "id": "swJObTZxRLhjABcA",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "all-minilm:22m"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        1376,
+        1136
+      ],
+      "id": "39282894-499a-4a61-9319-d398ff862782",
+      "name": "Embeddings Ollama1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "YbbfugIxUZIiBxzC",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "This is the part where the AI fetches the \ndocument from pinecone",
+        "height": 512,
+        "width": 672,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        960,
+        752
+      ],
+      "typeVersion": 1,
+      "id": "dd7f6736-9d30-4f2c-97ea-23fa7193a2d3",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KnowledgeBase": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "KnowledgeBase",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "13d43494-f7e9-4cea-a345-cb455b066df7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f02f995494cd88f8bbc6c82da93c310de3f2c6cb72f938b4c7cac2af58f0d81"
+  },
+  "id": "i3VD5YVtS87BFO5G",
+  "tags": []
+}

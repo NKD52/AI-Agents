@@ -1,0 +1,210 @@
+{
+  "name": "Deadline",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        -16
+      ],
+      "id": "7b27454d-efb2-4d3c-a28c-c9c629ec0617",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Your task is to neatly and STRUCTURAL organize the data and grab the user attention for their upcoming deadlines. Do not output any additional information text which is irrelevant . YOU CAN USE EMOJIS JUST IN THE OUTPUT NO REGEX OR EXPRESSION SHOULD BE THERE\n\nFIRST CALL THE date_time TOOL than Trigger the get_sheets tool, extract data from this tool and proceed\n\n\ndo no use * or / in the final output\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        48,
+        -16
+      ],
+      "id": "9ca0bd37-ce89-41b8-ab3f-f9d0100ea9d4",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        0,
+        160
+      ],
+      "id": "4287a28b-5bc5-4a0e-891b-bc9c49794395",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2Cjs7Bp6pqwjJ8nX",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro",
+          "mode": "list",
+          "cachedResultName": "Test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 891597643,
+          "mode": "list",
+          "cachedResultName": "Copy of Copy of Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro/edit#gid=891597643"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "date",
+              "lookupValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('values0_Value', `provide the time you got from calling the date_time took and format it into MONTHMONTH-DATEDATE-YEARYEAR`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        176,
+        176
+      ],
+      "id": "931a4de6-f41c-4ce9-a6f5-d814c4b9d6e6",
+      "name": "get_sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "includeTime": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTimeTool",
+      "typeVersion": 2,
+      "position": [
+        320,
+        176
+      ],
+      "id": "b2b81447-0e3c-454e-89d5-917952ef8cec",
+      "name": "date_time"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "667794849760863",
+        "recipientPhoneNumber": "923312926407",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        448,
+        -16
+      ],
+      "id": "5b781540-2d74-4007-8b47-a521567305b8",
+      "name": "DeadlineReminder",
+      "webhookId": "a5c181f4-5e78-4ef8-8ce3-0fd2527c7e71",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "bt00AxmP0YlY5p52",
+          "name": "WhatsApp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "DeadlineReminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "date_time": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeadlineReminder": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "724d586a-d48d-4b4d-96d6-6bc0afc2deed",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f02f995494cd88f8bbc6c82da93c310de3f2c6cb72f938b4c7cac2af58f0d81"
+  },
+  "id": "lTCYzZMuDxMYU6YT",
+  "tags": []
+}

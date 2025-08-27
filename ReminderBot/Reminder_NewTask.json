@@ -1,0 +1,467 @@
+{
+  "name": "Reminder_NewTask",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        -32
+      ],
+      "id": "2a5fdd18-afb8-4917-9950-77ced79051f7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Your job is:\nadd tasks to google tasks using google_task tool \n   - If there are multiple deadline dates for a single task, always use the largest one.  \n   - The \"due\" parameter must be in RFC 3339 format (e.g., \"2018-04-11T00:45:26.000Z\").  \n\ninput:\n{{ $json.message }}\n\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        64
+      ],
+      "id": "6bf03948-e863-4dc9-9ed9-d77ea8d5d6b7",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        976,
+        208
+      ],
+      "id": "5dbc848d-c954-4391-92b2-50f3a731e9ab",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2Cjs7Bp6pqwjJ8nX",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "task": "Y2d3Z3YyUTFCS2N0MWQ2Uw",
+        "title": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Title', `course + title + assignmentno`, 'string') }}",
+        "additionalFields": {
+          "dueDate": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Due_Date', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleTasksTool",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        224
+      ],
+      "id": "b53cdf27-344a-4d9f-89e9-ea831d7fc70d",
+      "name": "google_task",
+      "credentials": {
+        "googleTasksOAuth2Api": {
+          "id": "rDoLvhKhqcBzUfJk",
+          "name": "Google Tasks account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "104993df-0806-4d61-9691-aaa1aac57fe6",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        -528
+      ],
+      "id": "5c145f72-2a35-4813-bc28-b568d56f70df",
+      "name": "Webhook",
+      "webhookId": "104993df-0806-4d61-9691-aaa1aac57fe6"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        80,
+        -528
+      ],
+      "id": "dc705995-53a3-409f-a75b-edf666cde902",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        576,
+        80
+      ],
+      "id": "58ac9301-8377-4aa1-ae5c-f7a852a501a0",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.first().json.data\n\nlet text = \"📢 *New Assignments Added!*\\n\\n\";\n\nitems.forEach((item) => {\n  text += `*Assignment ${item.assignmentNo}*\\n`;\n  text += `📘 Course: ${item.course}\\n`;\n  text += `📝 Title: ${item.title}\\n`;\n  text += `📅 Deadline: ${item.deadline}\\n`;\n  text += \"───────────────\\n\";\n});\n\ntext += \"✅ All assignments have been added to Google Tasks.\";\ntext+= \"\\nLink to Google Tasks https://tasks.google.com/tasks/\"\n\nreturn [{ json: { message: text } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        80
+      ],
+      "id": "403b103f-6608-40e2-b9d4-c80c58f05c3a",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "command": "=node C:\\Users\\hookc\\.n8n\\scripts\\scrape.js 02-134232-093 mamacita@12 2"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -144
+      ],
+      "id": "1964b81b-8184-400d-87f5-7eee313e49bb",
+      "name": "Scrape"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get stdout string\nconst raw = $input.first().json.stdout;\n\n// 2. Parse it into JSON\nlet parsed = JSON.parse(raw);\n\n// 3. Omit any object if ANY field is empty/false/null\nparsed = parsed.filter(obj => {\n  return Object.values(obj).every(val => {\n    return val !== \"\" &&  val !== null;\n  });\n});\n\n// 4. Return as items\nreturn parsed.map(obj => ({ json: obj }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        288,
+        -144
+      ],
+      "id": "720560df-716e-4d2c-8929-62ca23fea1df",
+      "name": "Parse"
+    },
+    {
+      "parameters": {
+        "mode": "combineBySql",
+        "query": "SELECT \n  s.course, \n  s.title, \n  s.deadline, \n  s.addedSubmission, \n  s.assignmentNo\nFROM input1 s\nLEFT JOIN input2 t\n  ON s.course = t.course\n  AND s.title = t.title\nWHERE t.assignmentNo IS NULL\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        528,
+        -128
+      ],
+      "id": "a43f9497-b96c-432d-9c39-108ec88f50d6",
+      "name": "Remove Duplicates"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro",
+          "mode": "list",
+          "cachedResultName": "Test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 891597643,
+          "mode": "list",
+          "cachedResultName": "Copy of Copy of Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro/edit#gid=891597643"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        272,
+        32
+      ],
+      "id": "b79631a7-db2b-4230-a8c2-7efb8af9e6f5",
+      "name": "Old Scrape",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro",
+          "mode": "list",
+          "cachedResultName": "Test",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 891597643,
+          "mode": "list",
+          "cachedResultName": "Copy of Copy of Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DK1N564jcrnyqv3PBcMXV3SLFo-ymeFkv3oY4FfIJro/edit#gid=891597643"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "course",
+              "displayName": "course",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "assignmentNo",
+              "displayName": "assignmentNo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "addedSubmission",
+              "displayName": "addedSubmission",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "deadline",
+              "displayName": "deadline",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        752,
+        -128
+      ],
+      "id": "820110d4-7b6b-4d00-b70f-1796c1207313",
+      "name": "Add new assignments",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "667794849760863",
+        "recipientPhoneNumber": "923312926407",
+        "textBody": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        -144
+      ],
+      "id": "896b88f4-6790-4ef6-babf-bd86bd3e06c4",
+      "name": "Reminder",
+      "webhookId": "6d33f054-c8f3-410a-9534-7462b578f815",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "bt00AxmP0YlY5p52",
+          "name": "WhatsApp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Scrape",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Old Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "google_task": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Reminder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape": {
+      "main": [
+        [
+          {
+            "node": "Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Add new assignments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Old Scrape": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Add new assignments": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a7d91e86-7b13-42d5-a0be-825ed7df5002",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f02f995494cd88f8bbc6c82da93c310de3f2c6cb72f938b4c7cac2af58f0d81"
+  },
+  "id": "vwMjhuzct6l2bLcU",
+  "tags": []
+}
