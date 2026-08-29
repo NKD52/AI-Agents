@@ -1,0 +1,1073 @@
+{
+  "name": "Quotation piepline",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "8fa4d101-242c-4f27-a441-195e9509b7f9",
+        "formTitle": "New Quote Request",
+        "formDescription": "Enter details to generate and send a quote.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Customer Name",
+              "placeholder": "John Doe"
+            },
+            {
+              "fieldLabel": "Company Name",
+              "placeholder": "ACME Corp"
+            },
+            {
+              "fieldLabel": "Contact Email",
+              "placeholder": "john@example.com"
+            },
+            {
+              "fieldLabel": "Senior Contact Email",
+              "placeholder": "boss@example.com"
+            },
+            {
+              "fieldLabel": "Items/Description",
+              "fieldType": "textarea",
+              "placeholder": "Stamping Tool X1"
+            },
+            {
+              "fieldLabel": "Total Amount",
+              "fieldType": "number",
+              "placeholder": "1500"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "caa2e7c3-11aa-43d9-8ff5-0a0fc2761bb1",
+      "name": "n8n Form Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        -96
+      ],
+      "webhookId": "8fa4d101-242c-4f27-a441-195e9509b7f9"
+    },
+    {
+      "parameters": {
+        "sendTo": "=blogwriters5152@gmail.com",
+        "subject": "=Quotation for {{ $node[\"n8n Form Trigger\"].json[\"Company Name\"] }} [Ref: 1]",
+        "message": "Please find your quote attached.",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "id": "6c3f0037-9de4-4492-8366-88a12973f6ca",
+      "name": "Send Quote Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -96
+      ],
+      "webhookId": "72279985-b0c2-4026-bb0c-a6fec2426983",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zQMxr2IhfQJJA6Cf",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "5f486977-772d-4ef4-8641-7927757eaf3f",
+      "name": "Daily Follow-up Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "html_content": "=<!DOCTYPE html> <html> <head>     <style>         body { font-family: Arial, sans-serif; margin: 40px; color: #333; }         .header { display: flex; justify-content: space-between; border-bottom: 2px solid #444; padding-bottom: 20px; }         .logo { font-size: 24px; font-weight: bold; color: #0047AB; }         .details { margin: 30px 0; }         table { width: 100%; border-collapse: collapse; margin-top: 20px; }         th { background: #f4f4f4; text-align: left; padding: 10px; border: 1px solid #ddd; }         td { padding: 10px; border: 1px solid #ddd; }         .total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; }         .footer { margin-top: 50px; font-size: 10px; color: #777; border-top: 1px solid #eee; padding-top: 10px; }     </style> </head> <body>     <div class=\"header\">         <div class=\"logo\">YOUR COMPANY LOGO</div>         <div>             <strong>Quote #:</strong> 1<br>             <strong>Date:</strong> {{ $now.format('MMMM DD, YYYY') }}         </div>     </div>     <div class=\"details\">         <strong>Bill To:</strong><br>      {{ $json['Customer Name'] }}   <br>         {{ $json['Company Name'] }}    </div>     <table>         <thead>             <tr><th>Description</th><th>Total</th></tr>         </thead>         <tbody>             <tr>                 <td>{{ $json['Items/Description'] }}</td>                 <td>{{ $json['Total Amount'] }}</td>             </tr>         </tbody>     </table>     <div class=\"total\">Grand Total: ${{ $json['Total Amount'] }}</div>     <div class=\"footer\">         <p>Terms: Validity 30 days. Payment terms: Net 30. Thank you for your business!</p>     </div> </body> </html>",
+        "output_format": "file"
+      },
+      "type": "CUSTOM.htmlcsstopdf",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        -96
+      ],
+      "id": "c5726b4f-c82f-44f6-82ce-914495f8f0a5",
+      "name": "Convert HTML to PDF",
+      "credentials": {
+        "htmlcsstopdfApi": {
+          "id": "KyjLjFU2GMwmyako",
+          "name": "HTML to PDF account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE",
+          "mode": "list",
+          "cachedResultName": "quote",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 865693910,
+          "mode": "list",
+          "cachedResultName": "Sheet2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE/edit#gid=865693910"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "quote_id": "1",
+            "customer_name": "={{ $json['Customer Name'] }}",
+            "company": "={{ $json['Company Name'] }}",
+            "contact_email": "={{ $json['Contact Email'] }}",
+            "senior_contact_email": "={{ $json['Senior Contact Email'] }}",
+            "items": "={{ $json['Items/Description'] }}",
+            "total": "={{ $json['Total Amount'] }}",
+            "status": "Pending",
+            "thread_id": "1",
+            "date_sent": "={{ $json.submittedAt }}"
+          },
+          "matchingColumns": [
+            "quote_id"
+          ],
+          "schema": [
+            {
+              "id": "quote_id",
+              "displayName": "quote_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date_sent",
+              "displayName": "date_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "contact_email",
+              "displayName": "contact_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "senior_contact_email",
+              "displayName": "senior_contact_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "items",
+              "displayName": "items",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total",
+              "displayName": "total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "follow_up_10_sent",
+              "displayName": "follow_up_10_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "follow_up_21_sent",
+              "displayName": "follow_up_21_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "response_summary",
+              "displayName": "response_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thread_id",
+              "displayName": "thread_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -48,
+        96
+      ],
+      "id": "d5bca3be-1d35-475f-8ad5-c6ab405d3e71",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE",
+          "mode": "list",
+          "cachedResultName": "quote",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 865693910,
+          "mode": "list",
+          "cachedResultName": "Sheet2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE/edit#gid=865693910"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "Pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -176,
+        464
+      ],
+      "id": "602e0d4c-3570-4c8a-9169-8debf334a789",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "84a19ec5-51ea-4d3d-8c77-07e13e9abe22",
+              "leftValue": "={{ $json.date_sent.substring(0,10) }}",
+              "rightValue": "={{ $now.minus({days: 10}).toFormat('yyyy-MM-dd') }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        32,
+        464
+      ],
+      "id": "766163d5-a027-4fc0-8f21-0d0ca1bead96",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "16891cbd-2213-4435-a5e8-f2a5c5bdef34",
+              "leftValue": "={{ $json.date_sent.substring(0,10) }}",
+              "rightValue": "={{ $now.minus({days: 21}).toFormat('yyyy-MM-dd') }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        48,
+        656
+      ],
+      "id": "5e4edea4-7ffa-41a3-a2bc-e0f58c38b543",
+      "name": "Filter1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a sales assistant managing quotations for a stamping tools company.\n\nTASK:\n1. Read the customer's reply snippet below.\nExtract the Quote ID from the Subject Line (Format: [Ref: X]).\n3. Classify the reply:\n   - LIKELY_YES: Intends to order. (Note expected date).\n   - STILL_DECIDING: Decision pending. (Note timeframe).\n   - LOST: Won't order. (Note reason: Price, Lead_Time, Technical, or Other).\n   - UNCLEAR: Not enough info.\n\nTOOL USAGE:\nOnce classified, use the 'update_row' tool to update the row where 'quote_id' matches the ID you extracted.\n- Update 'status' with the classification.\n- Update 'response_summary' with a one-sentence summary + timeframe/reason.\n\nDATA:\nSubject Line: {{ $json.Subject }}\nReply Text: \n\"\"\"\n{{ $json.snippet }}\n\"\"\"",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        944,
+        432
+      ],
+      "id": "57dd512a-e392-41b3-a8c1-32402b9c0f5e",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "sender": "blogwriters5152@gmail.com"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        736,
+        432
+      ],
+      "id": "6f10301d-0657-4f84-9f56-50b74ccc5a43",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zQMxr2IhfQJJA6Cf",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get row(s) in sheet').item.json.customer_name }}",
+        "subject": "hi",
+        "message": "=Hi [Name], it's been a few weeks since we sent over our quote for [items]. We'd really appreciate a quick update, whether you're moving forward, still deciding, or if something's changed on your end. Happy to jump on a call if that's easier.\"",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        464
+      ],
+      "id": "5c5f55eb-3197-479c-b338-b3b6fd3b355a",
+      "name": "Send a message",
+      "webhookId": "3c55f212-35a5-416d-8b05-e94ff91d880c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zQMxr2IhfQJJA6Cf",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Update row in sheet in Google Sheets",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE",
+          "mode": "list",
+          "cachedResultName": "quote",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 865693910,
+          "mode": "list",
+          "cachedResultName": "Sheet2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE/edit#gid=865693910"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "quote_id": "1",
+            "response_summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('response_summary', ``, 'string') }}",
+            "follow_up_21_sent": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('follow_up_21_sent', ``, 'string') }}",
+            "follow_up_10_sent": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('follow_up_10_sent', ``, 'string') }}",
+            "status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "quote_id"
+          ],
+          "schema": [
+            {
+              "id": "quote_id",
+              "displayName": "quote_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date_sent",
+              "displayName": "date_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company",
+              "displayName": "company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "contact_email",
+              "displayName": "contact_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "senior_contact_email",
+              "displayName": "senior_contact_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "items",
+              "displayName": "items",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total",
+              "displayName": "total",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "follow_up_10_sent",
+              "displayName": "follow_up_10_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "follow_up_21_sent",
+              "displayName": "follow_up_21_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "response_summary",
+              "displayName": "response_summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thread_id",
+              "displayName": "thread_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1136,
+        624
+      ],
+      "id": "f883b2d9-c92c-4866-813b-7303b31fb5f8",
+      "name": "update_row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "=blogwriters5152@gmail.com",
+        "subject": "=Follow Up",
+        "emailType": "text",
+        "message": "=Hi {{ $json.customer_name }}, it's been a few weeks since we sent over our quote for {{ $json.items }}. We'd really appreciate a quick update, whether you're moving forward, still deciding, or if something's changed on your end. Happy to jump on a call if that's easier.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        656
+      ],
+      "id": "0f35919e-b52a-4884-9c01-967e360b8ed3",
+      "name": "Send a message1",
+      "webhookId": "3c55f212-35a5-416d-8b05-e94ff91d880c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zQMxr2IhfQJJA6Cf",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Reminder\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)",
+        "height": 448,
+        "width": 848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -400,
+        368
+      ],
+      "typeVersion": 1,
+      "id": "70b8437f-91cb-4faf-904b-25fb61e8adae",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Classifier \n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)",
+        "height": 400,
+        "width": 832,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        384
+      ],
+      "typeVersion": 1,
+      "id": "f9c7e918-f6cf-4a99-a253-ed0d61b207f4",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## Submission\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)",
+        "height": 432,
+        "width": 880,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -416,
+        -144
+      ],
+      "typeVersion": 1,
+      "id": "d8dcbebb-64cf-48df-bd76-a26f0f16c623",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "01dc226b-699a-488a-ad15-f2c16d83a801",
+      "name": "Daily Follow-up Check1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE",
+          "mode": "list",
+          "cachedResultName": "quote",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 865693910,
+          "mode": "list",
+          "cachedResultName": "Sheet2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1A9NoNjypK_C74vCwuhBt1hQkU-fGbPsdkAPoLqWUglE/edit#gid=865693910"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "6e83c950-d05b-4726-b478-6e20c43b6c35",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are writing a weekly sales quote status digest for a stamping tools and components company.\noutput data in json with clear subject line\n\nBelow is a list of this week's quote updates, each with a company name, classification, timeframe/reason, and summary.\n\nWrite a short, plain-English weekly digest email with three sections:\n\n1. LIKELY TO CLOSE — list companies expected to order, with expected timing if known.\n2. STILL DECIDING — list companies with a pending decision, with expected timeframe if known.\n3. LOST — list companies that declined, grouped by reason (Price / Lead Time / Technical / Other), so patterns are easy to spot.\n\nKeep it under 200 words. Use short bullet points, not paragraphs. End with a one-line count summary (e.g., \"5 pending, 2 likely, 3 lost this week\").\nFORMAT THE OUTPUT NICELY IN PLAIN TEXT EASILY READABLE\n\nData:\n{{ $json.data }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1184,
+        -96
+      ],
+      "id": "2dde1e5f-2196-4bc6-a442-ad452990dfe2",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        -96
+      ],
+      "id": "62b7271c-a987-445b-ab0b-d9b870275bd4",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3.6-27b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1152,
+        80
+      ],
+      "id": "8238c191-bd5a-4838-be5e-4851085403b5",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "gefXQBLWfgHUqOvm",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "blogwriters5152@gmail.com",
+        "subject": "=Weekly Digest  {{ $('Daily Follow-up Check1').item.json['Readable date'] }}",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1552,
+        -96
+      ],
+      "id": "68d511b4-60a7-4795-8b0b-2ff31517d67b",
+      "name": "Send a message2",
+      "webhookId": "d29c61d5-25ae-47fa-914c-65de2cd91fe5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zQMxr2IhfQJJA6Cf",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Weekly Report\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)",
+        "height": 336,
+        "width": 1184,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -144
+      ],
+      "typeVersion": 1,
+      "id": "1b3a6376-837c-4892-a468-8c60225b8bae",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3.6-27b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        816,
+        640
+      ],
+      "id": "db0c4143-410d-4539-bf96-6943f506886a",
+      "name": "Groq Chat Model1",
+      "credentials": {
+        "groqApi": {
+          "id": "gefXQBLWfgHUqOvm",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Send Quote Email": {
+      "main": [
+        []
+      ]
+    },
+    "Daily Follow-up Check": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "n8n Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "Convert HTML to PDF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to PDF": {
+      "main": [
+        [
+          {
+            "node": "Send Quote Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter1": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "update_row": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        []
+      ]
+    },
+    "Daily Follow-up Check1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "51c1f249-6f60-4714-9f83-5c98adfc2a35",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f02f995494cd88f8bbc6c82da93c310de3f2c6cb72f938b4c7cac2af58f0d81"
+  },
+  "id": "wqQdpCrJXdPtWpsE",
+  "tags": []
+}

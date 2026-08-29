@@ -1,0 +1,309 @@
+{
+  "name": "Instagram Auto Publisher",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "3b77b9e0-4f0b-48d6-a65b-dfcc4d58d4aa",
+      "name": "Run Publisher",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Instagram Content Calendar"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Posts"
+        }
+      },
+      "id": "03b8e91b-c9dd-4596-a519-1c9eb2b85d71",
+      "name": "Read Pending Posts",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "hHzMlvDX09GttJCZ",
+          "cachedResultName": "Publish One Instagram Post"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ig_user_id": "<__PLACEHOLDER_VALUE__Instagram Business Account ID__>",
+            "media_type": "={{ $json.media_type }}",
+            "caption": "={{ $json.caption }}",
+            "media_url": "={{ $json.media_url }}",
+            "media_urls": "={{ $json.media_urls }}",
+            "row_number": "={{ $json.row_number }}"
+          },
+          "schema": [
+            {
+              "id": "ig_user_id",
+              "displayName": "ig_user_id",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "media_type",
+              "displayName": "media_type",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "caption",
+              "displayName": "caption",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "media_url",
+              "displayName": "media_url",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "media_urls",
+              "displayName": "media_urls",
+              "type": "string",
+              "required": false,
+              "display": true,
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "type": "number",
+              "required": false,
+              "display": true,
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "3b934d7c-d09c-4161-b2ec-fa7a05eeb1e9",
+      "name": "Publish One Post",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        672,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Instagram Content Calendar"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Posts"
+        }
+      },
+      "id": "a7d902c7-2186-4d81-9dae-ee8968f4691b",
+      "name": "Mark Row Posted",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ae1d701a-829f-4df8-a45a-347b53354a5e",
+      "name": "Loop Over Posts",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Instagram Content Calendar"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Posts"
+        }
+      },
+      "id": "f7ed84e7-9c50-4bca-b4fa-d6acaf72d33a",
+      "name": "Mark Row Failed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        896,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Select alert channel"
+        },
+        "text": "=:rotating_light: Instagram publish failed\n*Row:* {{ $(\"Loop Over Posts\").item.json.row_number }}\n*Type:* {{ $(\"Loop Over Posts\").item.json.media_type }}\n*Caption:* {{ $(\"Loop Over Posts\").item.json.caption }}\n*Error:* {{ $json.error?.message || $json.error || \"Unknown error\" }}",
+        "otherOptions": {}
+      },
+      "id": "ccfca2ea-9ffc-4b49-981f-7cf83bd8742e",
+      "name": "Alert Slack on Failure",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.6,
+      "position": [
+        1120,
+        288
+      ],
+      "webhookId": "0e77b634-1ad5-42ed-95bd-f6d4c46ee062"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Publisher": {
+      "main": [
+        [
+          {
+            "node": "Read Pending Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pending Posts": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish One Post": {
+      "main": [
+        [
+          {
+            "node": "Mark Row Posted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Row Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Row Posted": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Posts": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Publish One Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Row Failed": {
+      "main": [
+        [
+          {
+            "node": "Alert Slack on Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Slack on Failure": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "47112347-49bc-44f6-8abe-918374ad6edd",
+  "meta": {
+    "instanceId": "6baebad6a613f573ce9b84f1fb847d7f0e045a1f0751aee368c90aba8a41eada"
+  },
+  "nodeGroups": [],
+  "id": "5NfPDgZeWSDdaWrR",
+  "tags": []
+}

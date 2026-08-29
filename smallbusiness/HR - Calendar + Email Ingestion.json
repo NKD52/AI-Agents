@@ -1,0 +1,542 @@
+{
+  "name": "HR - Calendar + Email Ingestion",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "calendarId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "",
+          "cachedResultName": "Select the shifts/events calendar"
+        },
+        "triggerOn": "eventCreated",
+        "options": {}
+      },
+      "id": "0aad3d53-97a2-4246-9f15-7a7fa7a8b449",
+      "name": "Calendar Event",
+      "type": "n8n-nodes-base.googleCalendarTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e = $input.first().json;\nconst title = (e.summary || '').toString();\nconst desc = (e.description || '').toString();\nconst combined = (title + ' ' + desc).toLowerCase();\n\n// Extract start date -> event_date (YYYY-MM-DD)\nlet eventDate = '';\nconst startRaw = (e.start && (e.start.dateTime || e.start.date)) || '';\nif (startRaw) eventDate = startRaw.slice(0, 10);\nif (!eventDate) {\n  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));\n  eventDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');\n}\n\n// Try to map an attendee to an employee\nlet employee_name = '';\nlet employee_email = '';\nif (Array.isArray(e.attendees) && e.attendees.length > 0) {\n  employee_name = e.attendees[0].displayName || '';\n  employee_email = e.attendees[0].email || '';\n}\n\n// Derive intent\nlet intent;\nif (/(holiday|festival|eid|christmas|diwali|closed|public holiday)/.test(combined)) {\n  intent = 'Event';           // company-wide holiday/festival\n  employee_name = '';         // not tied to one employee\n  employee_email = '';\n} else if (/overtime|ot\\b/.test(combined)) {\n  intent = 'Overtime';\n} else if (/shift/.test(combined)) {\n  intent = 'Shift';\n} else {\n  intent = employee_name ? 'Shift' : 'Event';\n}\n\nreturn [{\n  json: {\n    timestamp: new Date().toISOString(),\n    employee_id: '',\n    employee_name: employee_name,\n    source: 'calendar',\n    raw_text: title + (desc ? ' - ' + desc : ''),\n    intent: intent,\n    amount: '',\n    event_date: eventDate,\n    status: 'approved',\n    notes: employee_email ? ('attendee: ' + employee_email) : (intent === 'Event' ? 'company-wide event/holiday' : ''),\n  },\n}];"
+      },
+      "id": "24c17bea-ac1c-4a67-998e-0f6fcae413e6",
+      "name": "Build Calendar Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1002,
+          "mode": "list",
+          "cachedResultName": "Ledger",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit#gid=1002"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "employee_id": "={{ $json.employee_id }}",
+            "employee_name": "={{ $json.employee_name }}",
+            "source": "={{ $json.source }}",
+            "raw_text": "={{ $json.raw_text }}",
+            "intent": "={{ $json.intent }}",
+            "amount": "={{ $json.amount }}",
+            "event_date": "={{ $json.event_date }}",
+            "status": "={{ $json.status }}",
+            "notes": "={{ $json.notes }}"
+          },
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "employee_id",
+              "displayName": "employee_id",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employee_name",
+              "displayName": "employee_name",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "raw_text",
+              "displayName": "raw_text",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "amount",
+              "displayName": "amount",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "event_date",
+              "displayName": "event_date",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fd114a0c-4e45-46e3-84fc-05e0155b706c",
+      "name": "Append Calendar to Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "subject:(overtime OR leave OR approval OR approved)",
+          "readStatus": "unread",
+          "sender": "coolnxx5152@gmail.com"
+        },
+        "options": {}
+      },
+      "id": "67723c1f-5d59-41b7-b962-7ab1bd9dd994",
+      "name": "Approval Email",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -160,
+        336
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "XTivJhA5Ql6U5pVw",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "=Subject: {{ $json.subject }}\n\n{{ $json.text || $json.snippet }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "is_approval",
+              "type": "boolean",
+              "description": "True only if this email is an official manager approval of overtime or leave for a specific employee. False for anything else (newsletters, general chatter, requests not yet approved).",
+              "required": true
+            },
+            {
+              "name": "intent",
+              "description": "The approval type. Exactly one of: 'Overtime', 'Full-Day Leave', 'Half Day', 'Sick Leave', 'Other'. Use 'Other' if not an approval.",
+              "required": true
+            },
+            {
+              "name": "employee_name",
+              "description": "Name of the employee the approval is for. Empty if not identifiable."
+            },
+            {
+              "name": "amount",
+              "type": "number",
+              "description": "Approved overtime hours (for Overtime). 0 if not applicable."
+            },
+            {
+              "name": "event_date",
+              "description": "The date the approval applies to, in YYYY-MM-DD. Empty if not stated."
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You parse internal HR emails to detect official manager approvals of overtime or leave. Only mark is_approval true when the email clearly grants/approves something for a named employee."
+        }
+      },
+      "id": "56db9f14-5f4b-4343-a6c4-2c1c85049e6c",
+      "name": "Parse Approval Email",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "approval",
+              "leftValue": "={{ $json.output.is_approval }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0437e2e8-9554-43ff-941c-e246b1d8cd5d",
+      "name": "Is Approval?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const exRaw = $('Parse Approval Email').item.json;\nconst ex = exRaw.output ? exRaw.output : exRaw;\nconst email = $('Approval Email').item.json;\n\nconst ALLOWED = ['Overtime','Full-Day Leave','Half Day','Sick Leave','Other'];\nlet intent = (ex.intent || 'Other').toString().trim();\nif (!ALLOWED.includes(intent)) intent = 'Other';\n\nlet amount = ex.amount != null ? ex.amount : '';\nif (amount !== '' && (isNaN(Number(amount)) || Number(amount) === 0)) amount = '';\n\nlet eventDate = (ex.event_date || '').toString().trim();\nif (!eventDate) {\n  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));\n  eventDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');\n}\n\nconst rawText = (email.subject || '') + ' :: ' + ((email.text || email.snippet || '').toString().slice(0, 500));\n\nreturn [{\n  json: {\n    timestamp: new Date().toISOString(),\n    employee_id: '',\n    employee_name: (ex.employee_name || '').toString().trim(),\n    source: 'email',\n    raw_text: rawText,\n    intent: intent,\n    amount: amount,\n    event_date: eventDate,\n    status: 'approved',\n    notes: 'manager email approval',\n  },\n}];"
+      },
+      "id": "37b820e1-22c1-4b14-a66b-d646b6e7feb5",
+      "name": "Build Email Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1002,
+          "mode": "list",
+          "cachedResultName": "Ledger",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit#gid=1002"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "employee_id": "={{ $json.employee_id }}",
+            "employee_name": "={{ $json.employee_name }}",
+            "source": "={{ $json.source }}",
+            "raw_text": "={{ $json.raw_text }}",
+            "intent": "={{ $json.intent }}",
+            "amount": "={{ $json.amount }}",
+            "event_date": "={{ $json.event_date }}",
+            "status": "={{ $json.status }}",
+            "notes": "={{ $json.notes }}"
+          },
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "employee_id",
+              "displayName": "employee_id",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employee_name",
+              "displayName": "employee_name",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "raw_text",
+              "displayName": "raw_text",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "amount",
+              "displayName": "amount",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "event_date",
+              "displayName": "event_date",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cc4944e0-f534-4b89-9b09-3dbc0e016ef2",
+      "name": "Append Email to Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1024,
+        336
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3.6-27b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        160,
+        544
+      ],
+      "id": "d4af6a8a-506a-4117-80c3-29afa67bdb88",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "34AQRAaOepD0Rf95",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Build Calendar Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Calendar Row": {
+      "main": [
+        [
+          {
+            "node": "Append Calendar to Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Email": {
+      "main": [
+        [
+          {
+            "node": "Parse Approval Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Approval Email": {
+      "main": [
+        [
+          {
+            "node": "Is Approval?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Approval?": {
+      "main": [
+        [
+          {
+            "node": "Build Email Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email Row": {
+      "main": [
+        [
+          {
+            "node": "Append Email to Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Parse Approval Email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4d1bc35b-5273-45b3-9c02-e89a9c928aae",
+  "meta": {
+    "instanceId": "6baebad6a613f573ce9b84f1fb847d7f0e045a1f0751aee368c90aba8a41eada"
+  },
+  "nodeGroups": [],
+  "id": "dNefWqVxSc8f9hWI",
+  "tags": []
+}

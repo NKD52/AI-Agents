@@ -1,0 +1,271 @@
+{
+  "name": "HR - Manager Event Form",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "HR Event Log",
+        "formDescription": "Log an attendance or payroll event for an employee. Manager-entered events are treated as approved.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Employee",
+              "fieldName": "employee",
+              "placeholder": "Employee name or ID (e.g. Ali Raza / EMP001)",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Event Type",
+              "fieldType": "dropdown",
+              "fieldName": "event_type",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Late Arrival"
+                  },
+                  {
+                    "option": "Half Day"
+                  },
+                  {
+                    "option": "Sick Leave"
+                  },
+                  {
+                    "option": "Full-Day Leave"
+                  },
+                  {
+                    "option": "Overtime"
+                  },
+                  {
+                    "option": "Advance Request"
+                  },
+                  {
+                    "option": "Note"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Amount / Minutes / Hours",
+              "fieldType": "number",
+              "fieldName": "amount",
+              "placeholder": "Money for advance, hours for overtime, minutes for late"
+            },
+            {
+              "fieldLabel": "Event Date",
+              "fieldType": "date",
+              "fieldName": "event_date"
+            },
+            {
+              "fieldLabel": "Notes",
+              "fieldType": "textarea",
+              "fieldName": "notes",
+              "placeholder": "Optional details"
+            }
+          ]
+        },
+        "options": {
+          "buttonLabel": "Log Event",
+          "path": "hr-event",
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Event logged. Thank you!"
+            }
+          }
+        }
+      },
+      "id": "2a3c4261-37b0-4cd8-a7cb-276d1dfe3a15",
+      "name": "Manager Event Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "0a426a41-ec19-4abe-af05-b503f9ab2aa2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $input.first().json;\n\nconst employeeRaw = (f.employee || '').toString().trim();\n// Heuristic: if it looks like an ID (starts with EMP or is all digits), treat as id\nlet employee_id = '';\nlet employee_name = '';\nif (/^EMP/i.test(employeeRaw) || /^[0-9]+$/.test(employeeRaw)) {\n  employee_id = employeeRaw;\n} else {\n  employee_name = employeeRaw;\n}\n\nconst intent = (f.event_type || 'Note').toString().trim();\n\nlet amount = f.amount;\nif (amount === undefined || amount === null || amount === '') amount = '';\nelse if (isNaN(Number(amount))) amount = '';\n\n// Default event_date to today (Asia/Karachi) if not provided\nlet eventDate = (f.event_date || '').toString().trim();\nif (!eventDate) {\n  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));\n  const y = now.getFullYear();\n  const m = String(now.getMonth() + 1).padStart(2, '0');\n  const d = String(now.getDate()).padStart(2, '0');\n  eventDate = y + '-' + m + '-' + d;\n}\n\nconst notesParts = [];\nif (f.notes) notesParts.push(String(f.notes));\n// Flag missing amount when the event type needs one\nconst needsAmount = (intent === 'Overtime' || intent === 'Advance Request');\nif (needsAmount && amount === '') notesParts.push('needs amount');\n\nconst rawText = 'Manager logged: ' + intent + (amount !== '' ? (' (' + amount + ')') : '') + (employeeRaw ? ' for ' + employeeRaw : '');\n\nreturn [{\n  json: {\n    timestamp: new Date().toISOString(),\n    employee_id: employee_id,\n    employee_name: employee_name,\n    source: 'form',\n    raw_text: rawText,\n    intent: intent,\n    amount: amount,\n    event_date: eventDate,\n    status: 'approved',\n    notes: notesParts.join(' | '),\n  },\n}];"
+      },
+      "id": "615d1b4e-95e3-421f-af18-0fae927c3771",
+      "name": "Build Ledger Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1002,
+          "mode": "list",
+          "cachedResultName": "Ledger",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit#gid=1002"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employee_id",
+              "displayName": "employee_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employee_name",
+              "displayName": "employee_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "raw_text",
+              "displayName": "raw_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "amount",
+              "displayName": "amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "event_date",
+              "displayName": "event_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "a1bb58c7-8532-4b1a-8f5a-5054b9117e44",
+      "name": "Append to Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manager Event Form": {
+      "main": [
+        [
+          {
+            "node": "Build Ledger Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Ledger Row": {
+      "main": [
+        [
+          {
+            "node": "Append to Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9c029265-e928-44bc-9e75-bf462f1055f9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6baebad6a613f573ce9b84f1fb847d7f0e045a1f0751aee368c90aba8a41eada"
+  },
+  "nodeGroups": [],
+  "id": "jBRwZe9rI3VqtAhC",
+  "tags": []
+}

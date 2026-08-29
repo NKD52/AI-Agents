@@ -1,0 +1,391 @@
+{
+  "name": "HR - WhatsApp Ingestion + Intent",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {
+          "messageStatusUpdates": [
+            "all"
+          ]
+        }
+      },
+      "id": "58bf1404-01a7-42f3-b87c-33c0457ac229",
+      "name": "WhatsApp Message In",
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        112
+      ],
+      "webhookId": "68c16260-17e3-4c00-b650-4ac4309993a3"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst msg = (item.messages && item.messages[0]) || {};\nconst contact = (item.contacts && item.contacts[0]) || {};\n\nconst from = msg.from || '';\nconst name = (contact.profile && contact.profile.name) || '';\nconst type = msg.type || 'unknown';\n\nlet text = '';\nlet mediaNote = '';\nif (type === 'text') {\n  text = (msg.text && msg.text.body) || '';\n} else if (type === 'button') {\n  text = (msg.button && msg.button.text) || '';\n} else if (type === 'interactive') {\n  const inter = msg.interactive || {};\n  text = (inter.button_reply && inter.button_reply.title) || (inter.list_reply && inter.list_reply.title) || '';\n} else {\n  text = '[' + type + ' message]';\n  mediaNote = 'media type: ' + type;\n}\n\nconst isText = type === 'text' && text.trim().length > 0;\n\n// Convert WhatsApp epoch seconds to ISO if present\nlet msgTimestamp = new Date().toISOString();\nif (msg.timestamp) {\n  const secs = parseInt(msg.timestamp, 10);\n  if (!isNaN(secs)) msgTimestamp = new Date(secs * 1000).toISOString();\n}\n\nreturn [{\n  json: {\n    sender_phone: from,\n    sender_name: name,\n    msg_type: type,\n    text: text || '(empty message)',\n    is_text: isText,\n    media_note: mediaNote,\n    msg_timestamp: msgTimestamp,\n  },\n}];"
+      },
+      "id": "8f95ab71-8b43-4de3-b941-28d36cc9c46c",
+      "name": "Normalize Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.text }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "intent",
+              "description": "Classify the HR intent of the message. Must be exactly one of: 'Late Arrival', 'Half Day', 'Sick Leave', 'Full-Day Leave', 'Advance Request', 'Overtime', 'Other'. If it cannot be confidently classified, return 'Other'.",
+              "required": true
+            },
+            {
+              "name": "amount",
+              "type": "number",
+              "description": "Numeric amount mentioned: money for an Advance Request, hours for Overtime, or minutes late for Late Arrival. Strip currency symbols and separators. Return 0 if none."
+            },
+            {
+              "name": "event_date",
+              "description": "The date the message refers to, in YYYY-MM-DD format. If the sender says 'today' or gives no date, leave empty."
+            },
+            {
+              "name": "note",
+              "description": "A short one-line normalized summary of the request."
+            }
+          ]
+        },
+        "options": {
+          "systemPromptTemplate": "You are an HR assistant for a small business. Extract structured attendance/payroll intent from short WhatsApp messages written by employees or managers. Be strict about the allowed intent values."
+        }
+      },
+      "id": "96dbd5dc-dcbf-446a-959e-03b4226e8c7a",
+      "name": "Extract Intent",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Employees",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "phone",
+              "lookupValue": "={{ $(\"Normalize Message\").item.json.sender_phone }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "00d097dd-00e3-4c1c-9367-0c5aeb67cea4",
+      "name": "Lookup Employee",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        112
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const norm = $('Normalize Message').item.json;\nconst exRaw = $('Extract Intent').item.json;\nconst ex = exRaw.output ? exRaw.output : exRaw;\nconst empRaw = $('Lookup Employee').item.json || {};\nconst emp = (empRaw && Object.keys(empRaw).length > 0) ? empRaw : null;\n\nconst ALLOWED = ['Late Arrival','Half Day','Sick Leave','Full-Day Leave','Advance Request','Overtime','Other'];\nlet intent = (ex && ex.intent ? String(ex.intent) : '').trim();\nif (!ALLOWED.includes(intent)) intent = norm.is_text ? 'Unknown' : 'Other';\n\nlet amount = ex && ex.amount != null ? ex.amount : '';\nif (amount !== '' && isNaN(Number(amount))) amount = '';\n\n// Default event_date to today in Asia/Karachi\nlet eventDate = ex && ex.event_date ? String(ex.event_date).trim() : '';\nif (!eventDate) {\n  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));\n  const y = now.getFullYear();\n  const m = String(now.getMonth() + 1).padStart(2, '0');\n  const d = String(now.getDate()).padStart(2, '0');\n  eventDate = y + '-' + m + '-' + d;\n}\n\nconst notesParts = [];\nif (ex && ex.note) notesParts.push(String(ex.note));\nif (norm.media_note) notesParts.push(norm.media_note);\nif (!emp) notesParts.push('unmatched sender');\nif (intent === 'Unknown') notesParts.push('could not classify - ask to rephrase');\n\nreturn [{\n  json: {\n    timestamp: new Date().toISOString(),\n    employee_id: emp ? (emp.employee_id || '') : '',\n    employee_name: emp ? (emp.employee_name || norm.sender_name || '') : (norm.sender_name || ''),\n    source: 'whatsapp',\n    raw_text: norm.text,\n    intent: intent,\n    amount: amount,\n    event_date: eventDate,\n    status: 'pending',\n    notes: notesParts.join(' | '),\n    // carried for reply, not stored\n    _sender_phone: norm.sender_phone,\n  },\n}];"
+      },
+      "id": "09b06703-9dbd-4c9a-8ce2-c8ec3e70ccca",
+      "name": "Build Ledger Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1024,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Ledger"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "employee_id": "={{ $json.employee_id }}",
+            "employee_name": "={{ $json.employee_name }}",
+            "source": "={{ $json.source }}",
+            "raw_text": "={{ $json.raw_text }}",
+            "intent": "={{ $json.intent }}",
+            "amount": "={{ $json.amount }}",
+            "event_date": "={{ $json.event_date }}",
+            "status": "={{ $json.status }}",
+            "notes": "={{ $json.notes }}"
+          },
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "employee_id",
+              "displayName": "employee_id",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employee_name",
+              "displayName": "employee_name",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "raw_text",
+              "displayName": "raw_text",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "intent",
+              "displayName": "intent",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "amount",
+              "displayName": "amount",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "event_date",
+              "displayName": "event_date",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "812a48de-101e-4ded-ae34-e42b159f19f2",
+      "name": "Append to Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1248,
+        112
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "<__PLACEHOLDER_VALUE__WhatsApp Business phone number ID__>",
+        "recipientPhoneNumber": "={{ $(\"Build Ledger Row\").item.json._sender_phone }}",
+        "textBody": "={{ $('Build Ledger Row').item.json.intent === 'Unknown' ? 'Sorry, we could not understand your message. Please rephrase (e.g. \\\"15 min late today\\\", \\\"need 5000 advance\\\", \\\"sick leave today\\\").' : 'Got it \\u2705 Logged as: ' + $('Build Ledger Row').item.json.intent + '. Thank you!' }}",
+        "additionalFields": {}
+      },
+      "id": "eff9d2a3-476b-4c88-bee0-08dcaf1402ef",
+      "name": "Send Confirmation",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1472,
+        112
+      ],
+      "webhookId": "c86a4ad1-de03-42e5-884c-9ce690c1404f",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        464,
+        288
+      ],
+      "id": "c69b6f5f-056d-4fb1-8125-4c8f26bc5ef2",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "34AQRAaOepD0Rf95",
+          "name": "Groq account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Message In": {
+      "main": [
+        [
+          {
+            "node": "Normalize Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Message": {
+      "main": [
+        [
+          {
+            "node": "Extract Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Intent": {
+      "main": [
+        [
+          {
+            "node": "Lookup Employee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Employee": {
+      "main": [
+        [
+          {
+            "node": "Build Ledger Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Ledger Row": {
+      "main": [
+        [
+          {
+            "node": "Append to Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to Ledger": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Intent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f1e82c3d-7bde-4f32-9eba-56865747f399",
+  "meta": {
+    "instanceId": "6baebad6a613f573ce9b84f1fb847d7f0e045a1f0751aee368c90aba8a41eada"
+  },
+  "nodeGroups": [],
+  "id": "RnHuWWdpgJ4mbfjG",
+  "tags": []
+}

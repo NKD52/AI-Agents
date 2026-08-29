@@ -1,0 +1,339 @@
+{
+  "name": "My workflow 7",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-order",
+        "options": {}
+      },
+      "name": "Shopify Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        416,
+        336
+      ],
+      "id": "245772c0-673f-4151-ba05-7cd331a23176",
+      "webhookId": "17bc12fb-1a85-4e4b-a08a-8777b47e2b82"
+    },
+    {
+      "parameters": {
+        "jsCode": "const order = $input.item.json.body || {};\nconst token = require('crypto').randomUUID();\n\n// Set default delivery date to 3 days from now\nconst deliveryDate = new Date();\ndeliveryDate.setDate(deliveryDate.getDate() + 3);\n\n// Generate Google Calendar Link\nconst text = encodeURIComponent('Package Delivery: ' + (order.id || '12345'));\nconst dateString = deliveryDate.toISOString().replace(/-|:|_/g, '').substring(0, 15) + 'Z';\nconst calLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dateString}/${dateString}`;\n\nreturn {\n  orderId: order.id,\n  customerPhone: order.phone,\n  token: token,\n  deliveryDate: deliveryDate.toISOString(),\n  calLink: calLink,\n  portalUrl: `http://localhost:3000/delivery?token=${token}`\n};"
+      },
+      "name": "Generate Links & Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        336
+      ],
+      "id": "cf6d9652-1089-4b32-92ee-fec82920cf46"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "react-update",
+        "options": {}
+      },
+      "name": "React Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        416,
+        656
+      ],
+      "id": "9106e4fb-20bb-4a1f-9332-9a2de45687ad",
+      "webhookId": "ce6e497c-152e-44fe-bd66-53a2803402f6"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        640,
+        336
+      ],
+      "id": "cbd8f57e-59df-4095-b1a2-eacd8cc7237a",
+      "name": "Append or update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1088,
+        560
+      ],
+      "id": "3fb3e314-3350-4457-9470-e1ccfd6403e7",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ocdJBaO-TnEIZj4tgm_aqgJP00bwVeUVPbnTdulYnOM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        864,
+        752
+      ],
+      "id": "3960d39a-8488-4558-b357-0ab41b747d2f",
+      "name": "Append or update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "IVAGQGEDfC5Zapyv",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "62dec55c-d221-437d-b02e-83e9fa176482",
+              "leftValue": "text",
+              "rightValue": "loacation",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        640,
+        656
+      ],
+      "id": "6e769a9f-7be5-4925-9ba3-bb8eec3216fd",
+      "name": "Client sent location?"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1193902953815696",
+        "recipientPhoneNumber": "+923312926407",
+        "textBody": "Your order has been confirmed! Your estimate delivery time is 3-4 days. Add it to your calander: https://calendar.app.google/SuSn2d97qeNmCUtB8",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        560
+      ],
+      "id": "9530ee36-0077-4f52-a2c4-90ae72044523",
+      "name": "Send message",
+      "webhookId": "888f02dc-9dc1-410d-b001-c4f87c6927a2",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "bt00AxmP0YlY5p52",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "1193902953815696",
+        "recipientPhoneNumber": "+923312926407",
+        "textBody": "Your order has been confirmed! Your estimate delivery time is 3-4 days. Add it to your calander: https://calendar.app.google/SuSn2d97qeNmCUtB8",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1088,
+        336
+      ],
+      "id": "45e54ab2-81d3-4f5e-ba80-013ef8dfbc08",
+      "name": "Send message1",
+      "webhookId": "888f02dc-9dc1-410d-b001-c4f87c6927a2",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "bt00AxmP0YlY5p52",
+          "name": "WhatsApp account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Shopify Webhook": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Links & Token": {
+      "main": [
+        [
+          {
+            "node": "Send message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "React Webhook": {
+      "main": [
+        [
+          {
+            "node": "Client sent location?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Generate Links & Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Client sent location?": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append or update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a4d8f87a-4f19-4070-a5ab-105732b91038",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7f02f995494cd88f8bbc6c82da93c310de3f2c6cb72f938b4c7cac2af58f0d81"
+  },
+  "id": "NkTgfVLZwieXj9qh",
+  "tags": []
+}

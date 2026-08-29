@@ -1,0 +1,864 @@
+{
+  "name": "HR - Monthly Payroll Compiler",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "38cc3cce-ede2-41fe-a4b9-3176833b8738",
+      "name": "Run Payroll Now",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Employees",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "42e243c3-2adc-4f31-9f6a-a6e121f592e8",
+      "name": "Read Employees",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        576
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months",
+              "triggerAtDayOfMonth": 28,
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "id": "b46384d2-26cf-4646-b9eb-d8b1f8d8bd64",
+      "name": "Payroll Day Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1001,
+          "mode": "list",
+          "cachedResultName": "Rules",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit#gid=1001"
+        },
+        "options": {}
+      },
+      "id": "070c6ee6-c23f-4955-a892-ff7a834f40a3",
+      "name": "Read Rules",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        576
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1002,
+          "mode": "list",
+          "cachedResultName": "Ledger",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit#gid=1002"
+        },
+        "options": {}
+      },
+      "id": "e9f16408-ea8c-4021-b13d-7a3659050510",
+      "name": "Read Ledger",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        576
+      ],
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const employees = $('Read Employees').all().map(i => i.json).filter(e => (e.employee_id || e.employee_name || e.name));\nconst ruleRows = $('Read Rules').all().map(i => i.json);\nconst ledger = $('Read Ledger').all().map(i => i.json);\n\nfunction num(v, d) {\n  if (v === undefined || v === null || v === '') return d;\n  const n = Number(String(v).replace(/[^0-9.\\-]/g, ''));\n  return isNaN(n) ? d : n;\n}\n\n// Build rules map: supports key/value rows OR a single wide row\nconst R = {};\nfor (const r of ruleRows) {\n  if (r.rule !== undefined && r.rule !== '') R[String(r.rule).trim()] = r.value;\n}\nif (ruleRows.length >= 1 && R.overtime_multiplier === undefined) {\n  Object.assign(R, ruleRows[0]);\n}\n\nconst late_grace = num(R.late_grace_minutes, 10);\nconst half_cut = num(R.half_day_cut, 0.5);\nconst unpaid_cut = num(R.unpaid_leave_cut, 1);\nconst ot_mult = num(R.overtime_multiplier, 1.5);\nconst adv_cap = num(R.advance_cap, 1e12);\nconst wdays = num(R.working_days_per_month, 26);\nconst hpd = num(R.hours_per_day, 8);\nconst late_pen = num(R.late_penalty, 0);\n\nconst ruleDefaultsUsed = [];\nif (R.overtime_multiplier === undefined) ruleDefaultsUsed.push('overtime_multiplier=1.5');\nif (R.working_days_per_month === undefined) ruleDefaultsUsed.push('working_days_per_month=26');\n\nconst now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));\nconst period = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');\n\nconst out = [];\nfor (const emp of employees) {\n  const eid = (emp.employee_id || '').toString().trim();\n  const ename = (emp.employee_name || emp.name || '').toString().trim();\n\n  let monthly = num(emp.monthly_salary || emp.salary, 0);\n  if (monthly === 0 && (emp.daily_rate !== undefined)) monthly = num(emp.daily_rate, 0) * wdays;\n  const daily = wdays > 0 ? monthly / wdays : 0;\n  const hourly = hpd > 0 ? daily / hpd : 0;\n\n  const rows = ledger.filter(r => {\n    const rid = (r.employee_id || '').toString().trim();\n    const rname = (r.employee_name || '').toString().trim();\n    const match = (eid && rid === eid) || ((!rid || rid === '') && ename && rname === ename);\n    const inPeriod = (r.event_date || '').toString().startsWith(period);\n    return match && inPeriod;\n  });\n\n  let overtime_pay = 0, penalties = 0, advances = 0;\n  const flags = [];\n  for (const r of rows) {\n    const intent = (r.intent || '').toString();\n    const status = (r.status || '').toString().toLowerCase();\n    const amt = num(r.amount, 0);\n    if (intent === 'Overtime') {\n      if (status === 'approved') overtime_pay += amt * hourly * ot_mult;\n      else flags.push('overtime pending (' + amt + 'h)');\n    } else if (intent === 'Half Day') {\n      penalties += daily * half_cut;\n    } else if (intent === 'Full-Day Leave') {\n      penalties += amt;\n    } else if (intent === 'Sick Leave') {\n      flags.push('sick leave ' + (r.event_date || ''));\n    } else if (intent === 'Late') {\n      if (amt > late_grace) penalties += late_pen;\n    } else if (intent === 'Advance') {\n      if (status === 'approved') advances += amt;\n      else flags.push('advance pending (' + amt + ')');\n    } else if (intent === 'Unknown') {\n      flags.push('unclassified message needs review');\n    }\n    if ((r.notes || '').toString().includes('needs amount')) flags.push('needs amount: ' + intent);\n  }\n\n  const advCapped = Math.min(advances, adv_cap);\n  if (advances > adv_cap) flags.push('advance capped at ' + adv_cap);\n  overtime_pay = Math.round(overtime_pay);\n  penalties = Math.round(penalties);\n  const net = Math.round(monthly + overtime_pay - penalties - advCapped);\n\n  const whatsapp = (emp.whatsapp || emp.phone || '').toString().trim();\n  const email = (emp.email || '').toString().trim();\n  if (!whatsapp && !email) flags.push('no contact on file - delivery skipped');\n\n  out.push({\n    json: {\n      pay_period: period,\n      employee_id: eid,\n      employee_name: ename,\n      base_pay: monthly,\n      overtime_pay: overtime_pay,\n      advances_deducted: advCapped,\n      penalties: penalties,\n      net_pay: net,\n      whatsapp: whatsapp,\n      email: email,\n      has_whatsapp: !!whatsapp,\n      has_email: !!email,\n      notes: flags.join(' | '),\n      rules_summary: 'OT x' + ot_mult + ', half-day cut ' + half_cut + ', grace ' + late_grace + 'min, advance cap ' + adv_cap + (ruleDefaultsUsed.length ? ' | DEFAULTS: ' + ruleDefaultsUsed.join(',') : ''),\n    },\n  });\n}\nreturn out;"
+      },
+      "id": "0f8ea2d3-e28d-4552-9263-af82e6e35462",
+      "name": "Compute Payroll",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.item.json;\n\nconst rows = [\n  ['Base Pay', d.base_pay],\n  ['Overtime Pay', d.overtime_pay],\n  ['Penalties (deductions)', '-' + d.penalties],\n  ['Advances Deducted', '-' + d.advances_deducted],\n];\n\n// Map rows to HTML using template literals\nconst trs = rows.map(r => `\n  <tr>\n    <td style=\"padding: 12px 16px; border-bottom: 1px solid #f1f5f9; color: #475569;\">${r[0]}</td>\n    <td style=\"padding: 12px 16px; border-bottom: 1px solid #f1f5f9; text-align: right; font-weight: 500; color: #1e293b;\">${r[1]}</td>\n  </tr>\n`).join('');\n\n// Build the full HTML document\nconst html = `\n<!doctype html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <style>\n    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #334155; background: #f8fafc; padding: 40px; }\n    .payslip-box { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 32px; border: 1px solid #e2e8f0; border-radius: 8px; }\n    .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 24px; }\n    .header h2 { margin: 0; color: #0f172a; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; }\n    .header p { margin: 4px 0 0; color: #64748b; font-size: 14px; }\n    .employee-details { margin-bottom: 24px; padding: 16px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; }\n    .employee-details p { margin: 4px 0; font-size: 14px; }\n    .employee-details strong { color: #0f172a; width: 130px; display: inline-block; }\n    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }\n    .net-pay td { padding: 16px; font-weight: 700; font-size: 18px; color: #0f172a; border-top: 2px solid #cbd5e1; background: #f8fafc; }\n    .notes { font-size: 13px; color: #b91c1c; background: #fef2f2; padding: 12px; border-radius: 6px; border: 1px solid #fecaca; margin-bottom: 12px; }\n    .rules { font-size: 11px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 16px; }\n  </style>\n</head>\n<body>\n  <div class=\"payslip-box\">\n    <div class=\"header\">\n      <h2>Salary Slip</h2>\n      <p>Pay Period: ${d.pay_period}</p>\n    </div>\n    \n    <div class=\"employee-details\">\n      <p><strong>Employee Name:</strong> ${d.employee_name}</p>\n      <p><strong>Employee ID:</strong> ${d.employee_id || 'N/A'}</p>\n    </div>\n\n    <table>\n      <tbody>\n        ${trs}\n        <tr class=\"net-pay\">\n          <td>Net Pay</td>\n          <td style=\"text-align:right\">${d.net_pay}</td>\n        </tr>\n      </tbody>\n    </table>\n\n    ${d.notes ? `<div class=\"notes\"><strong>Notes:</strong> ${d.notes}</div>` : ''}\n    <div class=\"rules\">Rules summary: ${d.rules_summary}</div>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{ json: Object.assign({}, d, { payslip_html: html }) }];"
+      },
+      "id": "c690ea24-21c0-4fca-a597-1cc3d97fa9f0",
+      "name": "Build Payslip HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const emps = $('Compute Payroll').all().map(i => i.json);\nconst total = emps.length;\nconst flagged = emps.filter(e => e.notes && e.notes.length > 0);\nconst noContact = emps.filter(e => !e.has_whatsapp && !e.has_email);\nconst totalNet = emps.reduce((s, e) => s + (Number(e.net_pay) || 0), 0);\nreturn [{\n  json: {\n    processed_employees: total,\n    total_net_pay: totalNet,\n    flagged_count: flagged.length,\n    no_contact_count: noContact.length,\n    flagged_employees: flagged.map(e => e.employee_name + ': ' + e.notes),\n    note: total === 0 ? 'No employees found - nothing to process.' : 'Payroll compiled for ' + total + ' employee(s).',\n  },\n}];"
+      },
+      "id": "276fffb6-4b47-4723-b4d5-d8a6078b0b35",
+      "name": "Payroll Run Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        672
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://v2.api2pdf.com/chrome/pdf/html",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "854730d3-44ca-4817-b4b3-ee528f7d996e"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"html\": $json.payslip_html } }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "3c8b02a6-6a97-4218-b7a6-63d71e6d5e28",
+      "name": "Generate PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1360,
+        256
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Build Payslip HTML').item.json;\nconst bin = $input.item.binary;\nconst pdf_ok = !!(bin && bin.data);\n\nconst via = [];\nif (d.has_whatsapp) via.push('whatsapp');\nif (d.has_email) via.push('email');\n\nconst msg = 'Payslip ' + d.pay_period + ' for ' + d.employee_name + '\\n' +\n  'Net Pay: ' + d.net_pay + '\\n' +\n  'Base: ' + d.base_pay + ' | Overtime: ' + d.overtime_pay + '\\n' +\n  'Deductions: ' + (d.penalties + d.advances_deducted) + (d.notes ? ('\\nNotes: ' + d.notes) : '');\n\nconst json = Object.assign({}, d, {\n  pdf_ok: pdf_ok,\n  pdf_url: pdf_ok ? 'attached' : 'FAILED',\n  delivered_via: via.join('+') || 'none',\n  delivered_at: new Date().toISOString(),\n  summary_msg: msg,\n});\n\nreturn [{ json: json, binary: bin }];"
+      },
+      "id": "c35ce6af-0e61-44da-8bbe-7983de4ab650",
+      "name": "Prepare Delivery",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc",
+          "mode": "list",
+          "cachedResultName": "Pay Book",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1003,
+          "mode": "list",
+          "cachedResultName": "Payslips",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1r3_iidqpGlC-yMuc9GtaCIvSNuIrA0_spuJ92fW1hfc/edit#gid=1003"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "pay_period": "={{ $json.pay_period }}",
+            "employee_id": "={{ $json.employee_id }}",
+            "employee_name": "={{ $json.employee_name }}",
+            "base_pay": "={{ $json.base_pay }}",
+            "overtime_pay": "={{ $json.overtime_pay }}",
+            "advances_deducted": "={{ $json.advances_deducted }}",
+            "penalties": "={{ $json.penalties }}",
+            "net_pay": "={{ $json.net_pay }}",
+            "pdf_url": "={{ $json.pdf_url }}",
+            "delivered_via": "={{ $json.delivered_via }}",
+            "delivered_at": "={{ $json.delivered_at }}",
+            "notes": "={{ $json.notes }}"
+          },
+          "schema": [
+            {
+              "id": "pay_period",
+              "displayName": "pay_period",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employee_id",
+              "displayName": "employee_id",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "employee_name",
+              "displayName": "employee_name",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "base_pay",
+              "displayName": "base_pay",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "overtime_pay",
+              "displayName": "overtime_pay",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "advances_deducted",
+              "displayName": "advances_deducted",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "penalties",
+              "displayName": "penalties",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "net_pay",
+              "displayName": "net_pay",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "pdf_url",
+              "displayName": "pdf_url",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "delivered_via",
+              "displayName": "delivered_via",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "delivered_at",
+              "displayName": "delivered_at",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "97eef6c8-54c7-49cc-a705-53a3a97f1de7",
+      "name": "Write Payslip Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1792,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Q9y83emJdM04dg7q",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "wa",
+              "leftValue": "={{ $json.has_whatsapp }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "pdf",
+              "leftValue": "={{ $json.pdf_ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e4de9659-0627-4209-aec0-29d624ddf82e",
+      "name": "WhatsApp + PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "<__PLACEHOLDER_VALUE__WhatsApp Business phone number ID__>",
+        "recipientPhoneNumber": "={{ $json.whatsapp }}",
+        "messageType": "document",
+        "mediaPath": "useMedian8n",
+        "additionalFields": {
+          "mediaFilename": "=payslip-{{ $json.pay_period }}.pdf",
+          "mediaCaption": "={{ $json.summary_msg }}"
+        }
+      },
+      "id": "8cbde69e-5dea-4ae9-b55f-209dca07a7c8",
+      "name": "WhatsApp Payslip PDF",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2016,
+        192
+      ],
+      "webhookId": "4d2f5393-cfb8-48a1-a48e-25528fed52e7",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "wa",
+              "leftValue": "={{ $json.has_whatsapp }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "pdf",
+              "leftValue": "={{ $json.pdf_ok }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "db27b27e-506d-4cd5-b32d-fb5f52859abe",
+      "name": "WhatsApp no PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "<__PLACEHOLDER_VALUE__WhatsApp Business phone number ID__>",
+        "recipientPhoneNumber": "={{ $json.whatsapp }}",
+        "textBody": "={{ $json.summary_msg }}\n\n(PDF payslip could not be generated this run; it will be resent.)",
+        "additionalFields": {}
+      },
+      "id": "c0a4ea64-6f9a-436f-b4c0-62ede387854c",
+      "name": "WhatsApp Payslip Text",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2016,
+        384
+      ],
+      "webhookId": "65aa6b4c-0b14-4684-be63-1855f18aa2b9",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "em",
+              "leftValue": "={{ $json.has_email }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "pdf",
+              "leftValue": "={{ $json.pdf_ok }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "eb3a8bd8-0ef1-4bec-bb7a-459ddc005fbf",
+      "name": "Email + PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Payslip {{ $json.pay_period }} - {{ $json.employee_name }}",
+        "message": "={{ $json.payslip_html }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "id": "ab7149cc-f827-41ac-913c-9e24716238fa",
+      "name": "Email Payslip PDF",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        576
+      ],
+      "webhookId": "54f8d370-595b-4abb-8feb-117adfe84082",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "XTivJhA5Ql6U5pVw",
+          "name": "Gmail account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "em",
+              "leftValue": "={{ $json.has_email }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "pdf",
+              "leftValue": "={{ $json.pdf_ok }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a58b62df-08fc-4724-9060-3633a7e80e1c",
+      "name": "Email no PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1792,
+        768
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Payslip {{ $json.pay_period }} - {{ $json.employee_name }}",
+        "message": "={{ $json.payslip_html }}<p style=\"color:#a00\">Note: PDF attachment could not be generated this run.</p>",
+        "options": {}
+      },
+      "id": "be656448-1e6b-4a1a-be95-61e47cfaf2ea",
+      "name": "Email Payslip (no PDF)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        768
+      ],
+      "webhookId": "c1d73722-1421-4e0c-ada8-7ddeb21cfe52",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "XTivJhA5Ql6U5pVw",
+          "name": "Gmail account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.FileUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "name": "Download PDF Binary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1440,
+        528
+      ],
+      "id": "23d932d3-5015-445f-800e-9702183ad07f"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Payroll Now": {
+      "main": [
+        [
+          {
+            "node": "Read Employees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Employees": {
+      "main": [
+        [
+          {
+            "node": "Read Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payroll Day Schedule": {
+      "main": [
+        [
+          {
+            "node": "Read Employees",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Rules": {
+      "main": [
+        [
+          {
+            "node": "Read Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Ledger": {
+      "main": [
+        [
+          {
+            "node": "Compute Payroll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Payroll": {
+      "main": [
+        [
+          {
+            "node": "Build Payslip HTML",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Payroll Run Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Payslip HTML": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF": {
+      "main": [
+        [
+          {
+            "node": "Download PDF Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Delivery": {
+      "main": [
+        [
+          {
+            "node": "Write Payslip Row",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WhatsApp + PDF?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WhatsApp no PDF?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email + PDF?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email no PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp + PDF?": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Payslip PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp no PDF?": {
+      "main": [
+        [
+          {
+            "node": "WhatsApp Payslip Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email + PDF?": {
+      "main": [
+        [
+          {
+            "node": "Email Payslip PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email no PDF?": {
+      "main": [
+        [
+          {
+            "node": "Email Payslip (no PDF)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download PDF Binary": {
+      "main": [
+        [
+          {
+            "node": "Prepare Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "aa6de6a8-cf71-487f-b7d8-2181947a74f6",
+  "meta": {
+    "instanceId": "6baebad6a613f573ce9b84f1fb847d7f0e045a1f0751aee368c90aba8a41eada"
+  },
+  "nodeGroups": [],
+  "id": "kt4VFItfSg60bPcl",
+  "tags": []
+}
