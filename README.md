@@ -18,6 +18,10 @@ A collection of AI assistants and business automations by Najmuddin Dawoodjee. B
 | Assistants & productivity | [Job Hunter](Job%20Hunter/) | Screenshots |
 | Assistants & productivity | [Chatbot](chatbot/) | Video demo and screenshots |
 
+## Case studies
+
+[Read the case studies](case-studies/) for agency client lifecycle automation, client churn risk scoring, and dormant lead reactivation.
+
 ## Try an n8n workflow
 
 1. Open a project marked **n8n export** or **n8n exports** and download a workflow JSON file.
